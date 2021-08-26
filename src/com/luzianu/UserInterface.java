@@ -53,7 +53,7 @@ public class UserInterface {
 
         SwingUtilities.invokeLater(() -> {
             FlatLightLaf.setup();
-            frame = new JFrame();
+            frame = new JFrame("Osu Music Preview Generator");
             frame.setResizable(false);
             frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 

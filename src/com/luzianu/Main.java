@@ -159,7 +159,7 @@ public class Main {
                 String latestVersion = location.replace(GIT_HUB_LATEST_URL.replace("latest", "tag/"), "");
 
                 if (!VERSION.equals(latestVersion)) {
-                    int result = JOptionPane.showConfirmDialog(null, "There's a new version available! Please download it it might have fixed some bugs.", ":]", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                    int result = JOptionPane.showConfirmDialog(null, "There's a new version available! Please download it, it might have fixed some bugs.", ":]", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
                     if (result == JOptionPane.OK_OPTION) {
                         UserInterface.openWebpage(GIT_HUB_LATEST_URL);
                         return false;
