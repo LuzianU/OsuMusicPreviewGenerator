@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 public class Main {
     public static final String GIT_HUB_LATEST_URL = "https://github.com/LuzianU/OsuMusicPreviewGenerator/releases/latest";
     public static final String GIT_HUB_DOWNLOAD_BASE_URL = "https://github.com/LuzianU/OsuMusicPreviewGenerator/releases/download/";
-    private static final String VERSION = "v1.0";
+    private static final String VERSION = "v1.1";
 
     public static File FFMPEG = null;
 
@@ -181,6 +181,9 @@ public class Main {
 
     public static File getFfmpegFile() {
         try {
+            if(new File("ffmpeg.exe").exists())
+                return new File("ffmpeg.exe");
+
             ProcessBuilder pb = new ProcessBuilder("where", "ffmpeg");
             final Process p = pb.start();
             Scanner sc = new Scanner(p.getInputStream());
