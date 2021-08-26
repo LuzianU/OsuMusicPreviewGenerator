@@ -258,11 +258,13 @@ public class UserInterface {
                 throw new RuntimeException("input does not exist");
 
             try {
-                if (input.getCanonicalPath().equals(output.getCanonicalPath())) {
+
+                if (!allowOutputToSongs.getState() && input.getCanonicalPath().equals(output.getCanonicalPath())) {
                     JOptionPane.showMessageDialog(frame, "Tick the '" + allowOutputToSongs.getText() + "' box.\n" +
                                                          "Keep in mind that this way not only let's you play osu while " +
                                                          "the generation process is running since it will constantly do rescans " +
                                                          "but also there is a chance of messing up your whole input folder.", ":|", JOptionPane.WARNING_MESSAGE);
+                    return;
                 }
 
             } catch (IOException e) {
