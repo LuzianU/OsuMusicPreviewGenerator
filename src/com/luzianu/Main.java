@@ -13,6 +13,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
@@ -21,7 +23,7 @@ import java.util.logging.SimpleFormatter;
 public class Main {
     public static final String GIT_HUB_LATEST_URL = "https://github.com/LuzianU/OsuMusicPreviewGenerator/releases/latest";
     public static final String GIT_HUB_DOWNLOAD_BASE_URL = "https://github.com/LuzianU/OsuMusicPreviewGenerator/releases/download/";
-    private static final String VERSION = "v1.3";
+    private static final String VERSION = "v1.4";
 
     public static File FFMPEG = null;
 
@@ -33,10 +35,9 @@ public class Main {
             if (!output.exists())
                 throw new IllegalArgumentException("File does not exist: " + output.getCanonicalPath());
 
-            File[] folders = null;
+            final File[] folders = input.isDirectory() ? input.listFiles((dir, name) -> dir.isDirectory() && name.startsWith("[")) : null;
             int amountOfFiles = 1;
             if (input.isDirectory()) {
-                folders = input.listFiles((dir, name) -> dir.isDirectory());
                 if (folders != null)
                     amountOfFiles = folders.length;
             }
@@ -72,9 +73,54 @@ public class Main {
             if (folders != null && input.isDirectory()) {
                 Arrays.stream((new File[]{ input })).forEach(consumer);
 
-                if (multiThreaded)
-                    Arrays.stream(folders).parallel().forEach(consumer);
-                else
+                if (multiThreaded) {
+                    AtomicInteger atomicInteger = new AtomicInteger(0);
+                    int n = Runtime.getRuntime().availableProcessors() - 1;
+
+                    Runnable r = () -> {
+                        int index;
+                        while ((index = atomicInteger.getAndIncrement()) < folders.length) {
+                            File folder = folders[index];
+                            if (folder.isDirectory()) {
+                                UserInterface.updateProgress(current[0], finalAmountOfFiles);
+
+                                System.out.println();
+                                System.out.println("[" + Thread.currentThread().getId() + "]\t" + current[0] + " / " + finalAmountOfFiles);
+                                System.out.println();
+
+                                boolean isRoot = false;
+                                try {
+                                    isRoot = folder.getCanonicalPath().equals(input.getCanonicalPath());
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                                try {
+                                    doGen(folder, output, skipAlreadyGeneratedMaps, hitsoundVolume, isRoot);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+                            current[0]++;
+                        }
+                    };
+
+                    Thread[] threads = new Thread[n];
+                    for (int i = 0; i < n; i++) {
+                        threads[i] = new Thread(r);
+                        threads[i].start();
+                    }
+                    for (int i = 0; i < n; i++) {
+                        try {
+                            threads[i].join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    //Arrays.stream(folders).parallel().forEach(consumer);
+                } else
                     Arrays.stream(folders).forEach(consumer);
             } else {
                 try {
@@ -106,10 +152,11 @@ public class Main {
         new File("logs").mkdirs();
         Logger logger = Logger.getLogger("Thread" + Thread.currentThread().getId());
         FileHandler fh;
+        logger.setUseParentHandlers(false);
 
         try {
 
-            // This block configure the logger with handler and formatter
+            //This block configure the logger with handler and formatter
             fh = new FileHandler("logs\\Thread" + Thread.currentThread().getId() + ".log");
             logger.addHandler(fh);
             SimpleFormatter formatter = new SimpleFormatter();
