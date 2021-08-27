@@ -24,3 +24,5 @@ hs_err_pid*
 /src/META-INF/
 /.idea/
 /out/
+/ffmpeg.exe
+/logs/*
