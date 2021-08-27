@@ -10,14 +10,18 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.function.Consumer;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class Main {
     public static final String GIT_HUB_LATEST_URL = "https://github.com/LuzianU/OsuMusicPreviewGenerator/releases/latest";
     public static final String GIT_HUB_DOWNLOAD_BASE_URL = "https://github.com/LuzianU/OsuMusicPreviewGenerator/releases/download/";
-    private static final String VERSION = "v1.1";
+    private static final String VERSION = "v1.2";
 
     public static File FFMPEG = null;
 
@@ -96,7 +100,31 @@ public class Main {
         System.out.println("generation done");
     }
 
+    public static HashMap<Long, Logger> loggerMap = new HashMap<>();
+
+    public static Logger createLogger() {
+        new File("logs").mkdirs();
+        Logger logger = Logger.getLogger("Thread"+Thread.currentThread().getId());
+        FileHandler fh;
+
+        try {
+
+            // This block configure the logger with handler and formatter
+            fh = new FileHandler("logs\\Thread"+Thread.currentThread().getId()+".log");
+            logger.addHandler(fh);
+            SimpleFormatter formatter = new SimpleFormatter();
+            fh.setFormatter(formatter);
+
+        } catch (SecurityException | IOException e) {
+            e.printStackTrace();
+        }
+
+        return logger;
+    }
+
     private static void doGen(File folder, File output, boolean skipAlreadyGeneratedMaps, int hitsoundVolume, boolean isRoot) throws IOException {
+        if(!loggerMap.containsKey(Thread.currentThread().getId()))
+            loggerMap.put(Thread.currentThread().getId(), createLogger());
 
         File[] subDirs = null;
         if (!isRoot) {
@@ -126,6 +154,10 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        if(!System.getProperty("file.encoding").equals("UTF-8")) {
+            JOptionPane.showConfirmDialog(null, "using "+System.getProperty("file.encoding")+" and not UTF-8. This might cause some problems... ", ":|", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+        }
+        System.out.println(System.getProperty("file.encoding"));
         if (!checkForUpdates())
             return;
 
@@ -146,7 +178,6 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     private static boolean checkForUpdates() {

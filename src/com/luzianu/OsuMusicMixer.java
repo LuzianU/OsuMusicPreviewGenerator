@@ -1,16 +1,16 @@
 package com.luzianu;
 
 import javax.sound.sampled.*;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class OsuMusicMixer {
     final AudioFormat AUDIO_FORMAT = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
@@ -34,7 +34,10 @@ public class OsuMusicMixer {
 
     final static boolean VERBOSE = false;
 
+    private Logger logger;
+
     public OsuMusicMixer(boolean skipAlreadyGeneratedMaps) {
+        logger = Main.loggerMap.get(Thread.currentThread().getId());
         this.skipAlreadyGeneratedMaps = skipAlreadyGeneratedMaps;
     }
 
@@ -44,6 +47,8 @@ public class OsuMusicMixer {
 
     public boolean generateAllAudioFromOsuFolder(File osuFolder, File outputFolder, int quality, int volume) throws IOException, UnsupportedAudioFileException, InterruptedException {
         System.out.println("\ngenerating from " + osuFolder.getName());
+        logger.info("\ngenerating from " + osuFolder.getName());
+
         wavMap = new HashMap<>();
         timingMap = new HashMap<>();
 
@@ -57,16 +62,19 @@ public class OsuMusicMixer {
 
                 if (!osuFile.exists()) {
                     System.err.println("could not find a .osu file in " + osuFolder.getCanonicalPath());
+                    logger.info("could not find a .osu file in " + osuFolder.getCanonicalPath());
                     continue;
                 }
 
                 if (VERBOSE)
                     System.out.println("reading osu file " + osuFile.getName());
+                logger.info("reading osu file " + osuFile.getName());
 
                 if (skipAlreadyGeneratedMaps) {
                     if (Paths.get(osuFolder.getCanonicalPath(), osuFileName.replaceAll("\\.osu$", ".mp3")).toFile().exists()) {
                         if (VERBOSE)
                             System.out.println("skip due to generated mp3 already existing in this folder");
+                        logger.info("skip due to generated mp3 already existing in this folder");
                         continue;
                     }
                 }
@@ -81,12 +89,14 @@ public class OsuMusicMixer {
                 } catch (RuntimeException e) {
                     if (VERBOSE)
                         System.out.println(osuFileName + ": " + e.getMessage());
+                    logger.info(osuFileName + ": " + e.getMessage());
                 }
             }
         }
 
         if (wavFileNames.isEmpty()) {
             System.out.println("--> " + osuFolder.getName() + ": converting is not need since all osuFiles have a valid mp3");
+            logger.info("--> " + osuFolder.getName() + ": converting is not need since all osuFiles have a valid mp3");
             return false;
         }
 
@@ -99,6 +109,7 @@ public class OsuMusicMixer {
                 File osuFile = Paths.get(osuFolder.getCanonicalPath(), osuFileName).toFile();
                 if (VERBOSE)
                     System.out.println("doing osu file " + osuFileName);
+                logger.info("doing osu file " + osuFileName);
 
                 timingMap.clear();
 
@@ -107,6 +118,7 @@ public class OsuMusicMixer {
                 generateOutput(quality, volume, osuFolder, outputFile);
             } catch (Exception e) {
                 System.err.println(e.getMessage());
+                logger.info(e.getMessage());
             }
         }
 
@@ -115,6 +127,8 @@ public class OsuMusicMixer {
         deleteWavConverts(osuFolder);
 
         System.out.println("successfully generated music files for " + osuFolder.getName());
+        logger.info("successfully generated music files for " + osuFolder.getName());
+        logger.info("");
 
         return true;
     }
@@ -131,6 +145,7 @@ public class OsuMusicMixer {
 
         if (!osuFile.exists()) {
             System.err.println("osu file does not exist: " + osuFile.getCanonicalPath());
+            logger.info("osu file does not exist: " + osuFile.getCanonicalPath());
             return false;
         }
 
@@ -138,16 +153,19 @@ public class OsuMusicMixer {
 
         if (VERBOSE)
             System.out.println("\ngenerating " + osuFolder.getName());
+        logger.info("\ngenerating " + osuFolder.getName());
         wavMap = new HashMap<>();
         timingMap = new HashMap<>();
 
         if (VERBOSE)
             System.out.println("reading osu file " + osuFile.getName());
+        logger.info("reading osu file " + osuFile.getName());
         List<String> wavFileNames;
         try {
             wavFileNames = readOsuFile(osuFile, osuFolder, true);
         } catch (RuntimeException e) {
             System.err.println(e.getMessage());
+            logger.info(e.getMessage());
             return false;
         }
         generateWavMap(osuFolder, wavFileNames);
@@ -164,11 +182,13 @@ public class OsuMusicMixer {
     private void generateWavMap(File osuFolder, List<String> wavFileNames) throws IOException, InterruptedException {
         if (VERBOSE)
             System.out.println("converting " + wavFileNames.size() + " audio files to .wav");
+        logger.info("converting " + wavFileNames.size() + " audio files to .wav");
 
         convertWavFiles(wavFileNames, osuFolder);
 
         if (VERBOSE)
             System.out.println("finished converting");
+        logger.info("finished converting");
 
         // adding them to the wav map
         for (String name : wavFileNames) {
@@ -178,6 +198,7 @@ public class OsuMusicMixer {
                 addWav(Paths.get(System.getProperty("java.io.tmpdir"), tempFolderName, osuFolder.getName(), newFileName).toFile());
             } catch (Exception e) {
                 System.err.println("couldn't add wav file " + newFileName);
+                logger.info("couldn't add wav file " + newFileName);
             }
         }
     }
@@ -197,6 +218,7 @@ public class OsuMusicMixer {
 
         if (VERBOSE)
             System.out.println("mixing " + timingMap.keySet().size() + " sounds with a total of " + totalTimings + " occurrences");
+        logger.info("mixing " + timingMap.keySet().size() + " sounds with a total of " + totalTimings + " occurrences");
 
         for (String wavName : timingMap.keySet()) {
             List<Integer> list = timingMap.getOrDefault(wavName, new ArrayList<>());
@@ -209,11 +231,13 @@ public class OsuMusicMixer {
 
         if (VERBOSE)
             System.out.println("normalizing audio output");
+        logger.info("normalizing audio output");
 
         normalize();
 
         if (VERBOSE)
             System.out.println("saving raw audio output");
+        logger.info("saving raw audio output");
 
         ByteArrayInputStream bis = new ByteArrayInputStream(finalBytes);
         AudioInputStream ais = new AudioInputStream(bis, AUDIO_FORMAT, finalBytes.length / AUDIO_FORMAT.getFrameSize());
@@ -225,6 +249,7 @@ public class OsuMusicMixer {
 
         if (VERBOSE)
             System.out.println("converting audio output via ffmpeg");
+        logger.info("converting audio output via ffmpeg");
 
         if (!outputFile.getParentFile().exists())
             outputFile.getParentFile().mkdirs();
@@ -256,25 +281,42 @@ public class OsuMusicMixer {
             throw new RuntimeException("temp output could not be generated");
         else if (VERBOSE)
             System.out.println("temp output generated at " + tempOutput.getCanonicalPath());
+        logger.info("temp output generated at " + tempOutput.getCanonicalPath());
 
         if (tempOutput.getCanonicalPath().length() >= 256) { // WHHYYYYYY WINDOWS WHY
             File idFile = Paths.get(tempOutput.getParentFile().getCanonicalPath(), Thread.currentThread().getId() + "temp.wav").toFile();
             Files.move(tempOutput.toPath(), idFile.toPath());
             if (idFile.exists()) {
                 cmd[3] = idFile.getName();
-                Runtime.getRuntime().exec(cmd, null, tempOutput.getParentFile()).waitFor();
-                idFile.delete();
-            } else
+
+                //if(true) { // trying to fix chcp
+                    //Runtime.getRuntime().exec("cmd /c \"start somefile.bat && start other.bat && cd C:\\test && test.exe\"");
+
+                //} else {
+                    Runtime.getRuntime().exec(cmd, null, tempOutput.getParentFile()).waitFor();
+                    idFile.delete();
+                //}
+            } else {
                 System.err.println("file path longer than 256 characters :] thanks windows");
+                logger.info("file path longer than 256 characters :] thanks windows");
+            }
         } else {
-            Runtime.getRuntime().exec(cmd, null, tempOutput.getParentFile()).waitFor();
+            //if(true) {
+
+            //} else {
+                Runtime.getRuntime().exec(cmd, null, tempOutput.getParentFile()).waitFor();
+           // }
+
         }
         tempOutput.delete();
 
         if (!outputFile.exists())
             throw new RuntimeException("ffmpeg could not convert the mixed audio file to .mp3");
-        else if (VERBOSE)
+        else if (VERBOSE) {
             System.out.println("final audio output generated at " + outputFile.getCanonicalPath());
+        }
+        logger.info("final audio output generated at " + outputFile.getCanonicalPath());
+
 
     }
 
@@ -320,8 +362,9 @@ public class OsuMusicMixer {
     private void convertWavFiles(List<String> wavFileNames, File osuFolder) throws IOException, InterruptedException {
         List<String> cmds = new ArrayList<>();
         cmds.add("SETLOCAL EnableExtensions");
-        cmds.add("for /F \"tokens=4\" %%G in ('chcp') do set \"_chcp=%%G\"");
-        cmds.add(">NUL chcp 65001");
+        //cmds.add("chcp");
+        //cmds.add("for /F \"tokens=4\" %%G in ('chcp') do set \"_chcp=%%G\"");
+        cmds.add("chcp 65001");
         for (String name : wavFileNames) {
             String outputFile = name.endsWith(".ogg") ? (name + ".wav") : name;
 
@@ -331,14 +374,18 @@ public class OsuMusicMixer {
                      + "\"" + Paths.get(System.getProperty("java.io.tmpdir"), tempFolderName, osuFolder.getName()).toFile().getCanonicalPath().replace("%", "%%") + "\\" + outputFile.replace("%", "%%") + "\"");
         }
         cmds.add("copy /b NUL \"" + Paths.get(System.getProperty("java.io.tmpdir"), tempFolderName, osuFolder.getName()).toFile().getCanonicalPath().replace("%", "%%") + "\\done\"");
-        cmds.add(">NUL chcp %_chcp%");
+        //cmds.add(">NUL chcp %_chcp%");
         cmds.add("exit");
 
-        FileWriter writer = new FileWriter("convert" + Thread.currentThread().getId() + ".bat");
-        for (String str : cmds) {
-            writer.write(str + System.lineSeparator());
+        try (OutputStreamWriter writer =new OutputStreamWriter(new FileOutputStream("convert" + Thread.currentThread().getId() + ".bat"), StandardCharsets.UTF_8)) {
+            for (String str : cmds) {
+                writer.write(str + System.lineSeparator());
+            }
+        // do stuff
         }
-        writer.close();
+        //FileWriter writer = new FileWriter();
+        //FileWriter writer = new FileWriter("cot" + Thread.currentThread().getId() + ".bat");
+
 
         deleteWavConverts(osuFolder);
         Paths.get(System.getProperty("java.io.tmpdir"), tempFolderName, osuFolder.getName()).toFile().mkdirs();
@@ -347,10 +394,21 @@ public class OsuMusicMixer {
         if (doneFile.exists())
             doneFile.delete();
 
+        long start = System.currentTimeMillis();
+
+
         Runtime.getRuntime().exec("cmd /c start /min convert" + Thread.currentThread().getId() + ".bat");
 
+
         // scuffed, thanks java
+        long timeout = 5 * 60 * 1000;
         while (!doneFile.exists()) {
+            if(System.currentTimeMillis() > start + timeout) {
+                System.err.println("stopped after 5 min convert timeout");
+                logger.info("stopped after 5 min convert timeout");
+                break;
+            }
+
             // System.out.println("sleep");
             Thread.sleep(500);
         }
@@ -459,18 +517,23 @@ public class OsuMusicMixer {
                 }
 
             } catch (RuntimeException re) {
-                for (String wav : errorMap.keySet())
+                for (String wav : errorMap.keySet()) {
                     System.err.println(osuFile.getName() + ": couldn't find " + wav + " [" + errorMap.get(wav) + "x]");
+                    logger.info(osuFile.getName() + ": couldn't find " + wav + " [" + errorMap.get(wav) + "x]");
+                }
                 throw re;
             } catch (Exception e) {
                 if (VERBOSE)
                     System.out.println(line);
+                    logger.info(line);
                 e.printStackTrace();
             }
         }
 
-        for (String wav : errorMap.keySet())
+        for (String wav : errorMap.keySet()) {
             System.err.println(osuFile.getName() + ": couldn't find " + wav + " [" + errorMap.get(wav) + "x]");
+            logger.info(osuFile.getName() + ": couldn't find " + wav + " [" + errorMap.get(wav) + "x]");
+        }
 
         return wavFileNames;
     }
@@ -527,6 +590,7 @@ public class OsuMusicMixer {
     private void normalize() {
         if (peak == 0) { // return otherwise dividing by zero
             System.err.println("peak is 0 :(");
+            logger.info("peak is 0 :(");
             return;
         }
 
