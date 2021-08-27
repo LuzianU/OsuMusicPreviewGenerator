@@ -18,6 +18,10 @@ If that does not work you probably don't hava java installed. You can download i
   - Press `Win + R` and enter `intl.cpl`. Click on `Change system locale` and then tick the `Beta: Use Unicode UTF-8 for worldwide language support` checkbox. Restart your PC
   - If the above doesn't work let me know
 
+> # osu! lags while this is is generating in the background
+  - Disable Windows Defender real-time protection
+  - Open `Task Manager` > `Details`, right click `javaw.exe` > `Set affinity` and uncheck `CPU 0`. Only do this when there are more than one in the list though (should be)
+
 # Generating the music preview maps
 - Select your osu! songs folder as input. The program will recursivly check every subfolder for your .osu beatmaps
 - Select an empty folder as output, preferably on your fastest drive
