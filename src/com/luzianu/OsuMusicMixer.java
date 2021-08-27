@@ -56,7 +56,7 @@ public class OsuMusicMixer {
 
         String[] possibleOsuFileNames = osuFolder.list((dir, name) -> name.endsWith(".osu"));
         List<String> osuFileNames = new ArrayList<>();
-        if(possibleOsuFileNames != null) {
+        if (possibleOsuFileNames != null) {
             for (String osuFileName : possibleOsuFileNames) {
                 File osuFile = Paths.get(osuFolder.getCanonicalPath(), osuFileName).toFile();
 
@@ -283,31 +283,47 @@ public class OsuMusicMixer {
             System.out.println("temp output generated at " + tempOutput.getCanonicalPath());
         logger.info("temp output generated at " + tempOutput.getCanonicalPath());
 
+        File convertFile = new File("convert" + Thread.currentThread().getId() + "mp3.bat");
+        try (OutputStreamWriter writer = new OutputStreamWriter(
+                new FileOutputStream(convertFile), StandardCharsets.UTF_8)) {
+
+            writer.write("SETLOCAL EnableExtensions" + System.lineSeparator());
+            writer.write("chcp 65001" + System.lineSeparator());
+            writer.write("pushd \"" + tempOutput.getParentFile().getCanonicalPath() + "\"" + System.lineSeparator());
+            for (String str : cmd) {
+                writer.write(str + " ");
+            }
+
+            writer.write(System.lineSeparator() + "exit");
+        }
+
         if (tempOutput.getCanonicalPath().length() >= 256) { // WHHYYYYYY WINDOWS WHY
             File idFile = Paths.get(tempOutput.getParentFile().getCanonicalPath(), Thread.currentThread().getId() + "temp.wav").toFile();
             Files.move(tempOutput.toPath(), idFile.toPath());
             if (idFile.exists()) {
                 cmd[3] = idFile.getName();
 
-                //if(true) { // trying to fix chcp
-                    //Runtime.getRuntime().exec("cmd /c \"start somefile.bat && start other.bat && cd C:\\test && test.exe\"");
-
-                //} else {
+                if (true) { // trying to fix chcp
+                    Runtime.getRuntime().exec(new String[]{ "cmd", "/c", "start", "/min", "/wait", "", "\"" + convertFile.getCanonicalPath() + "\"" }).waitFor();
+                    idFile.delete();
+                } else {
                     Runtime.getRuntime().exec(cmd, null, tempOutput.getParentFile()).waitFor();
                     idFile.delete();
-                //}
+                }
             } else {
                 System.err.println("file path longer than 256 characters :] thanks windows");
                 logger.info("file path longer than 256 characters :] thanks windows");
             }
         } else {
-            //if(true) {
+            if (true) {
+                Runtime.getRuntime().exec(new String[]{ "cmd", "/c", "start", "/min", "/wait", "", "\"" + convertFile.getCanonicalPath() + "\"" }).waitFor();
 
-            //} else {
+            } else {
                 Runtime.getRuntime().exec(cmd, null, tempOutput.getParentFile()).waitFor();
-           // }
+            }
 
         }
+        convertFile.deleteOnExit();
         tempOutput.delete();
 
         if (!outputFile.exists())
@@ -316,7 +332,6 @@ public class OsuMusicMixer {
             System.out.println("final audio output generated at " + outputFile.getCanonicalPath());
         }
         logger.info("final audio output generated at " + outputFile.getCanonicalPath());
-
 
     }
 
@@ -361,9 +376,9 @@ public class OsuMusicMixer {
 
     private void convertWavFiles(List<String> wavFileNames, File osuFolder) throws IOException, InterruptedException {
         List<String> cmds = new ArrayList<>();
-        cmds.add("SETLOCAL EnableExtensions");
         //cmds.add("chcp");
         //cmds.add("for /F \"tokens=4\" %%G in ('chcp') do set \"_chcp=%%G\"");
+        cmds.add("SETLOCAL EnableExtensions");
         cmds.add("chcp 65001");
         for (String name : wavFileNames) {
             String outputFile = name.endsWith(".ogg") ? (name + ".wav") : name;
@@ -377,15 +392,15 @@ public class OsuMusicMixer {
         //cmds.add(">NUL chcp %_chcp%");
         cmds.add("exit");
 
-        try (OutputStreamWriter writer =new OutputStreamWriter(new FileOutputStream("convert" + Thread.currentThread().getId() + ".bat"), StandardCharsets.UTF_8)) {
+        File convertFile = new File("convert" + Thread.currentThread().getId() + ".bat");
+
+        try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(convertFile), StandardCharsets.UTF_8)) {
             for (String str : cmds) {
                 writer.write(str + System.lineSeparator());
             }
-        // do stuff
         }
         //FileWriter writer = new FileWriter();
         //FileWriter writer = new FileWriter("cot" + Thread.currentThread().getId() + ".bat");
-
 
         deleteWavConverts(osuFolder);
         Paths.get(System.getProperty("java.io.tmpdir"), tempFolderName, osuFolder.getName()).toFile().mkdirs();
@@ -396,24 +411,23 @@ public class OsuMusicMixer {
 
         long start = System.currentTimeMillis();
 
+        //Runtime.getRuntime().exec("cmd /c start /min convert" + Thread.currentThread().getId() + ".bat");
+        Runtime.getRuntime().exec(new String[]{ "cmd", "/c", "start", "/min", "/wait", "", "\"" + convertFile.getCanonicalPath() + "\"" }).waitFor();
 
-        Runtime.getRuntime().exec("cmd /c start /min convert" + Thread.currentThread().getId() + ".bat");
+        //// scuffed, thanks java
+        //long timeout = 5 * 60 * 1000;
+        //while (!doneFile.exists()) {
+        //    if (System.currentTimeMillis() > start + timeout) {
+        //        System.err.println("stopped after 5 min convert timeout");
+        //        logger.info("stopped after 5 min convert timeout");
+        //        break;
+        //    }
+//
+        //    // System.out.println("sleep");
+        //    Thread.sleep(500);
+        //}
 
-
-        // scuffed, thanks java
-        long timeout = 5 * 60 * 1000;
-        while (!doneFile.exists()) {
-            if(System.currentTimeMillis() > start + timeout) {
-                System.err.println("stopped after 5 min convert timeout");
-                logger.info("stopped after 5 min convert timeout");
-                break;
-            }
-
-            // System.out.println("sleep");
-            Thread.sleep(500);
-        }
-
-        new File("convert" + Thread.currentThread().getId() + ".bat").deleteOnExit();
+        convertFile.deleteOnExit();
         doneFile.delete();
     }
 
@@ -525,7 +539,7 @@ public class OsuMusicMixer {
             } catch (Exception e) {
                 if (VERBOSE)
                     System.out.println(line);
-                    logger.info(line);
+                logger.info(line);
                 e.printStackTrace();
             }
         }

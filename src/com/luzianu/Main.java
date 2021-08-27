@@ -21,7 +21,7 @@ import java.util.logging.SimpleFormatter;
 public class Main {
     public static final String GIT_HUB_LATEST_URL = "https://github.com/LuzianU/OsuMusicPreviewGenerator/releases/latest";
     public static final String GIT_HUB_DOWNLOAD_BASE_URL = "https://github.com/LuzianU/OsuMusicPreviewGenerator/releases/download/";
-    private static final String VERSION = "v1.2";
+    private static final String VERSION = "v1.3";
 
     public static File FFMPEG = null;
 
@@ -37,7 +37,7 @@ public class Main {
             int amountOfFiles = 1;
             if (input.isDirectory()) {
                 folders = input.listFiles((dir, name) -> dir.isDirectory());
-                if(folders != null)
+                if (folders != null)
                     amountOfFiles = folders.length;
             }
 
@@ -104,13 +104,13 @@ public class Main {
 
     public static Logger createLogger() {
         new File("logs").mkdirs();
-        Logger logger = Logger.getLogger("Thread"+Thread.currentThread().getId());
+        Logger logger = Logger.getLogger("Thread" + Thread.currentThread().getId());
         FileHandler fh;
 
         try {
 
             // This block configure the logger with handler and formatter
-            fh = new FileHandler("logs\\Thread"+Thread.currentThread().getId()+".log");
+            fh = new FileHandler("logs\\Thread" + Thread.currentThread().getId() + ".log");
             logger.addHandler(fh);
             SimpleFormatter formatter = new SimpleFormatter();
             fh.setFormatter(formatter);
@@ -123,7 +123,7 @@ public class Main {
     }
 
     private static void doGen(File folder, File output, boolean skipAlreadyGeneratedMaps, int hitsoundVolume, boolean isRoot) throws IOException {
-        if(!loggerMap.containsKey(Thread.currentThread().getId()))
+        if (!loggerMap.containsKey(Thread.currentThread().getId()))
             loggerMap.put(Thread.currentThread().getId(), createLogger());
 
         File[] subDirs = null;
@@ -154,8 +154,9 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        if(!System.getProperty("file.encoding").equals("UTF-8")) {
-            JOptionPane.showConfirmDialog(null, "using "+System.getProperty("file.encoding")+" and not UTF-8. This might cause some problems... ", ":|", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (!System.getProperty("file.encoding").equals("UTF-8")) {
+            JOptionPane.showConfirmDialog(null, "using " + System.getProperty("file.encoding") + " and not UTF-8. This might cause some problems...\n" +
+                                                "Check the github page if the generation process gets stuck.", ":|", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
         }
         System.out.println(System.getProperty("file.encoding"));
         if (!checkForUpdates())
@@ -212,7 +213,7 @@ public class Main {
 
     public static File getFfmpegFile() {
         try {
-            if(new File("ffmpeg.exe").exists())
+            if (new File("ffmpeg.exe").exists())
                 return new File("ffmpeg.exe");
 
             ProcessBuilder pb = new ProcessBuilder("where", "ffmpeg");
