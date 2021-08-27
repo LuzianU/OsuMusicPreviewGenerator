@@ -12,6 +12,12 @@ If you meet the requirements you should be able to just open the OsuMusicPreview
 
 If that does not work you probably don't hava java installed. You can download it [here](https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot). When running the installer make sure to also select the option `Set JAVA_HOME variable`.
 
+# Troubleshooting
+> # Generating from maps with cjk/unicode characters in their path isn't working or makes the generation process stuck
+  - This is most likely caused by your system not using UTF-8 or CodePage 65001
+  - Press `Win + R` and enter `intl.cpl`. Click on `Change system locale` and then tick the `Beta: Use Unicode UTF-8 for worldwide language support` checkbox. Restart your PC
+  - If the above doesn't work let me know
+
 # Generating the music preview maps
 - Select your osu! songs folder as input. The program will recursivly check every subfolder for your .osu beatmaps
 - Select an empty folder as output, preferably on your fastest drive
