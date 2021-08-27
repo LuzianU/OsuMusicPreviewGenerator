@@ -35,7 +35,7 @@ public class Main {
             if (!output.exists())
                 throw new IllegalArgumentException("File does not exist: " + output.getCanonicalPath());
 
-            final File[] folders = input.isDirectory() ? input.listFiles((dir, name) -> dir.isDirectory() && name.startsWith("[")) : null;
+            final File[] folders = input.isDirectory() ? input.listFiles((dir, name) -> dir.isDirectory()) : null;
             int amountOfFiles = 1;
             if (input.isDirectory()) {
                 if (folders != null)
